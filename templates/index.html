@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Dispositivos</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dispositivos Conectados</h1>
+    <table id="deviceTable">
+        <thead>
+            <tr>
+                <th>Device ID</th>
+                <th>Último Valor do Contador</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Linhas de dispositivos serão preenchidas aqui -->
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchDevices() {
+            const response = await fetch('/devices');
+            return await response.json();  // Dados no formato { "device1": { contador: X }, "device2": { contador: Y }, ... }
+        }
+
+        async function loadDevices() {
+            const devices = await fetchDevices();
+            const tableBody = document.getElementById('deviceTable').querySelector('tbody');
+            tableBody.innerHTML = '';  // Limpa o conteúdo anterior
+
+            for (const [deviceID, data] of Object.entries(devices)) {
+                const row = document.createElement('tr');
+
+                const cellID = document.createElement('td');
+                cellID.textContent = deviceID;
+                row.appendChild(cellID);
+
+                const cellCounter = document.createElement('td');
+                cellCounter.textContent = data.contador;
+                row.appendChild(cellCounter);
+
+                const cellAction = document.createElement('td');
+                const link = document.createElement('a');
+                link.href = `/device/${deviceID}`;  // Link para a página do dispositivo
+                link.textContent = 'Ver Gráficos';
+                cellAction.appendChild(link);
+                row.appendChild(cellAction);
+
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Carrega os dispositivos quando a página inicializa
+        loadDevices();
+        setInterval(loadDevices, 5000);  // Atualiza a tabela a cada 5 segundos
+    </script>
+</body>
+</html>
