@@ -17,6 +17,11 @@
         th {
             background-color: #f2f2f2;
         }
+        button {
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -26,6 +31,7 @@
             <tr>
                 <th>Device ID</th>
                 <th>Último Valor do Contador</th>
+                <th>Estado Atual</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -35,16 +41,46 @@
     </table>
 
     <script>
+        // Objeto para armazenar o estado local dos dispositivos
+        let deviceStates = {};
+
+        // Função para buscar os dispositivos
         async function fetchDevices() {
             const response = await fetch('/devices');
-            return await response.json();  // Dados no formato { "device1": { contador: X }, "device2": { contador: Y }, ... }
+            return await response.json();  // Dados no formato { "device1": { contador: X, estado: Y }, "device2": { contador: Y, estado: Z }, ... }
         }
 
+        // Função para enviar o estado de alteração
+        async function sendState(deviceID) {
+            // Envia o estado com o ID do dispositivo
+            const response = await fetch('/send_state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ deviceID: deviceID })
+            });
+
+            // Obtém os dados da resposta do servidor
+            const data = await response.json();
+
+            // Atualiza o estado local do dispositivo
+            deviceStates[deviceID] = data.estado;
+
+            // Exibe a resposta com o estado alterado
+            alert(`Dispositivo ${data.deviceID} alterado para: ${data.estado ? 'Ligado' : 'Desligado'}`);
+
+            // Recarrega os dispositivos para atualizar o estado na tabela
+            loadDevices();
+        }
+
+        // Função para carregar dispositivos na tabela
         async function loadDevices() {
             const devices = await fetchDevices();
             const tableBody = document.getElementById('deviceTable').querySelector('tbody');
             tableBody.innerHTML = '';  // Limpa o conteúdo anterior
 
+            // Para cada dispositivo, cria uma linha na tabela
             for (const [deviceID, data] of Object.entries(devices)) {
                 const row = document.createElement('tr');
 
@@ -56,11 +92,23 @@
                 cellCounter.textContent = data.contador;
                 row.appendChild(cellCounter);
 
+                const cellState = document.createElement('td');
+                // Exibe o estado do dispositivo a partir do objeto local
+                const estado = deviceStates[deviceID] !== undefined ? deviceStates[deviceID] : data.estado;
+                cellState.textContent = estado ? 'Ligado' : 'Desligado';
+                row.appendChild(cellState);
+
+                // Adiciona a ação de alterar o estado com o botão
                 const cellAction = document.createElement('td');
-                const link = document.createElement('a');
-                link.href = `/device/${deviceID}`;  // Link para a página do dispositivo
-                link.textContent = 'Ver Gráficos';
-                cellAction.appendChild(link);
+                const button = document.createElement('button');
+                button.textContent = 'Alternar Estado';
+
+                // Chama a função sendState passando o deviceID como parâmetro
+                button.onclick = function() {
+                    sendState(deviceID);  // Passa o deviceID para a função sendState
+                };
+
+                cellAction.appendChild(button);
                 row.appendChild(cellAction);
 
                 tableBody.appendChild(row);

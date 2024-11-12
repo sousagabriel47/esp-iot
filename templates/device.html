@@ -15,6 +15,11 @@
         h1 {
             text-align: center;
         }
+        #gauge-value {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -26,10 +31,11 @@
 
     <div class="gauge-container">
         <canvas id="gaugeCanvas"></canvas>
+        <div id="gauge-value">0</div> <!-- Div para mostrar o valor numérico -->
     </div>
 
     <script>
-        const deviceID = window.location.pathname.split('/').pop();  // Obtém o ID do dispositivo da URL
+        const deviceID = window.location.pathname.split('/').pop();
         document.getElementById('deviceID').textContent = deviceID;
 
         const chartCtx = document.getElementById('chartCanvas').getContext('2d');
@@ -60,14 +66,20 @@
             lineWidth: 0.2,
             radiusScale: 1,
             pointer: { length: 0.6, strokeWidth: 0.035, color: '#000000' },
-            colorStart: '#6F6EA0', 
-            colorStop: '#C0C0DB',
-            strokeColor: '#EEEEEE',
+            staticZones: [  // Define cores específicas para faixas de valores
+                { strokeStyle: "#30B32D", min: 0, max: 15 },  // Vermelho para 0-30°C
+                { strokeStyle: "#FFDD00", min: 15, max: 30 }, // Amarelo para 30-60°C
+                { strokeStyle: "#F03E3E", min: 30, max: 60 } // Verde para 60-100°C
+            ],
+            limitMax: true,
+            limitMin: true,
             highDpiSupport: true
         });
-        gauge.maxValue = 100;
+        gauge.maxValue = 60;
         gauge.setMinValue(0);
         gauge.animationSpeed = 32;
+
+        const gaugeValueElement = document.getElementById('gauge-value');
 
         async function fetchDeviceData() {
             const response = await fetch(`/device_data/${deviceID}`);
@@ -89,10 +101,11 @@
 
             // Atualiza o gauge de temperatura
             gauge.set(data.temperatura);
+            gaugeValueElement.textContent = `${data.temperatura}°C`;
         }
 
         updateDeviceData();
-        setInterval(updateDeviceData, 1000);  // Atualiza a cada segundo
+        setInterval(updateDeviceData, 1000);
     </script>
 </body>
 </html>
